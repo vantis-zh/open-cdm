@@ -183,6 +183,14 @@ public abstract class AbstractSplitAnalysisSpi implements SplitAnalysisSpi {
 
             Token startToken = ctx.getStart();
             Token stopToken = ctx.getStop();
+            if (startToken == null || stopToken == null) {
+                // The parser was aborted before it consumed any token for this statement, e.g. a syntax
+                // error thrown immediately by SyntaxErrorListener while predicting the rule. ANTLR only
+                // assigns ctx.stop in Parser.exitRule() (ctx.stop = _input.LT(-1)), and LT(-1) is null
+                // while the token stream still points at its first token. Such a context carries no
+                // statement text, so skip it and let the original syntax error propagate to the caller.
+                return;
+            }
             String script = statementParser().getTextKeepComment(this.tokens, this.lastStatement, startToken, stopToken);
             ScriptLocation scriptLocation = this.location.locate(script, stopToken.getStopIndex());
 
